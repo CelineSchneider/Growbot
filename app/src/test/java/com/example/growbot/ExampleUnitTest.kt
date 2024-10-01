@@ -1,4 +1,4 @@
-package com.example.smartwateringapp
+package com.example.growbot
 
 import org.junit.Test
 

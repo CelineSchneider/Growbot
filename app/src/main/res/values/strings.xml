@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">SmartWateringApp</string>
+    <string name="app_name">Growbot</string>
+    <string name="add_plant">Add new plant</string>
 </resources>

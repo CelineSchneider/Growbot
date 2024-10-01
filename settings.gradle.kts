@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SmartWateringApp"
+rootProject.name = "Growbot"
 include(":app")

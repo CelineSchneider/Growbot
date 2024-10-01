@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.smartwateringapp"
+    namespace = "com.example.growbot"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.smartwateringapp"
+        applicationId = "com.example.growbot"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
+    implementation("androidx.core:core-splashscreen:1.0.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
