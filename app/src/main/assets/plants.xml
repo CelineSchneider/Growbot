@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plants>
+    <plant id="1">
+        <name>Rose</name>
+        <measurements>
+            <measurement>
+                <timestamp>2024-10-01T12:00:00Z</timestamp>
+                <temperature>22.5</temperature>
+                <humidity>55.0</humidity>
+            </measurement>
+        </measurements>
+        <watering>
+            <entry>2024-10-01</entry>
+        </watering>
+    </plant>
+    <!-- Weitere Pflanzen können hier hinzugefügt werden -->
+</plants>
