@@ -1,4 +1,4 @@
-
+package com.example.growbot
 import android.content.Context
 import org.simpleframework.xml.Attribute
 import org.simpleframework.xml.Element
@@ -9,9 +9,9 @@ import org.simpleframework.xml.core.Persister
 import java.io.StringReader
 
 @Root(name = "plants", strict = false)
-class Texts @JvmOverloads constructor(
+class Plants @JvmOverloads constructor(
     @field:ElementList(inline = true, required = false)
-    var plants: List<Plant>? = null,  // Plants könnte null sein, wenn das XML leer ist
+    var plants: List<Plant>? = null,  // com.example.growbot.Plants könnte null sein, wenn das XML leer ist
     @field:Element(name = "waterLevel", required = false)
     var waterLevel: Int? = null // optional gemacht
 )
@@ -25,7 +25,9 @@ class Plant @JvmOverloads constructor(
     @field:ElementList(name = "measurements", inline = true, required = false)
     var measurements: List<Measurement>? = null,  // Measurements könnte null sein
     @field:ElementList(name = "watering", inline = true, required = false)
-    var watering: List<WateringEntry>? = null  // Watering könnte null sein
+    var watering: List<WateringEntry>? = null,  // Watering könnte null sein
+    @field:Element(name = "icon", required = false)
+    var icon: String? = null
 )
 
 @Root(name = "measurement", strict = false)
@@ -35,7 +37,7 @@ class Measurement @JvmOverloads constructor(
     @field:Element(name = "temperature", required = false)
     var temperature: Double? = null,  // Temperatur optional gemacht
     @field:Element(name = "humidity", required = false)
-    var humidity: Double? = null  // Feuchtigkeit optional gemacht
+    var humidity: Double? = null,  // Feuchtigkeit optional gemacht
 )
 
 @Root(name = "entry", strict = false)
@@ -44,7 +46,7 @@ class WateringEntry @JvmOverloads constructor(
     var date: String? = null  // Datum optional gemacht
 )
 
-fun readXmlFromAssets(context: Context): Texts? {
+fun readXmlFromAssets(context: Context): Plants? {
     // AssetManager verwenden, um die Datei zu öffnen
     val assetManager = context.assets
 
@@ -60,7 +62,7 @@ fun readXmlFromAssets(context: Context): Texts? {
 
     // Lese und parse die XML-Daten
     return try {
-        serializer.read(Texts::class.java, reader)
+        serializer.read(Plants::class.java, reader)
     } catch (e: Exception) {
         e.printStackTrace()
         null

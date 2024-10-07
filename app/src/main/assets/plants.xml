@@ -1,6 +1,6 @@
 <plants>
     <plant id="1">
-        <name>Rose</name>
+        <name>Alocasia</name>
         <measurements>
             <measurement>
                 <timestamp>2024-10-01T12:00:00Z</timestamp>
@@ -11,7 +11,19 @@
         <watering>
             <entry>2024-10-01</entry>
         </watering>
+        <icon>alocasia</icon>
     </plant>
-    <!-- Weitere Pflanzen -->
+    <plant id="2">
+        <name>Geranium</name>
+    </plant>
+    <plant id="3">
+        <name>Monstera</name>
+    </plant>
+    <plant id="4">
+        <name>Philodendron</name>
+    </plant>
+    <plant id="5">
+        <name>Zinnia</name>
+    </plant>
     <waterLevel>75</waterLevel>
 </plants>
