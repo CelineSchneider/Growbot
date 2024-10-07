@@ -17,16 +17,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.growbot.ui.theme.DarkGreen
 import com.example.growbot.ui.theme.GrowbotTheme
 import com.example.growbot.ui.theme.LightGreen
@@ -37,12 +41,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             GrowbotTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Lese die XML-Datei und erhalte die Pflanzen-Daten
-                    val plants = readXmlFromAssets(this) ?: Plants(emptyList(), 0)
-                    PlantTable(plants)
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val navController = rememberNavController()
+                    NavigationGraph(navController)
                 }
             }
         }
@@ -50,8 +51,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PlantTable(plant_collection: Plants) {
-    val selectedPlant = remember { mutableStateOf<Plant?>(null) } // Zustand für die ausgewählte Pflanze
+fun NavigationGraph(navController: NavHostController) {
+    NavHost(navController = navController, startDestination = "plant_table") {
+        composable("plant_table") { PlantTableScreen(navController) }
+        composable("plant_detail/{plantName}") { backStackEntry ->
+            val plantName = backStackEntry.arguments?.getString("plantName")
+            PlantDetailScreen(plantName, navController)
+        }
+    }
+}
+
+@Composable
+fun PlantTableScreen(navController: NavHostController) {
+    val plants = readXmlFromAssets(LocalContext.current) ?: Plants(emptyList(), 0)
 
     Column(
         modifier = Modifier
@@ -60,9 +72,19 @@ fun PlantTable(plant_collection: Plants) {
     ) {
         Text(
             text = "Growbot",
-            fontSize = 40.sp,
+            fontSize = 50.sp,
             fontWeight = FontWeight.Bold,
+            fontFamily = FontFamily(Font(R.font.atop)), // Benutzerdefinierte Schriftart
             color = DarkGreen,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally) // Zentrieren
+        )
+
+        Image(
+            painter = painterResource(id = R.drawable.growbot_white),
+            contentDescription = "Logo",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
         )
 
         Text(
@@ -72,60 +94,54 @@ fun PlantTable(plant_collection: Plants) {
             color = DarkGreen,
         )
 
-        // Prüfen, ob eine Pflanze ausgewählt wurde
-        if (selectedPlant.value != null) {
-            PlantDetail(selectedPlant.value!!)
-        } else {
-            // Pflanzen-Datenzeilen mit FlowRow für flexibles Layout
-            FlowRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(LightGreen)
-                    .padding(5.dp),
-                mainAxisSpacing = 16.dp,
-                crossAxisSpacing = 16.dp
-            ) {
-                for (plant in plant_collection.plants ?: emptyList()) {
-                    // Container für Bild und Text
-                    Surface(
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(LightGreen)
+                .padding(5.dp),
+            mainAxisSpacing = 16.dp,
+            crossAxisSpacing = 16.dp
+        ) {
+            for (plant in plants.plants ?: emptyList()) {
+                // Container für Bild und Text
+                Surface(
+                    modifier = Modifier
+                        .size(100.dp) // Feste Größe für quadratische Kästchen
+                        .clickable {
+                            navController.navigate("plant_detail/${plant.name}") // Navigation zur Detailansicht
+                        },
+                    shape = RoundedCornerShape(16.dp), // Abgerundete Ecken
+                    border = BorderStroke(2.dp, Color.White), // Weißer Rand
+                    color = Color.White // Hintergrundfarbe
+                ) {
+                    Column(
                         modifier = Modifier
-                            .size(100.dp) // Feste Größe für quadratische Kästchen
-                            .clickable {
-                                selectedPlant.value = plant // Pflanze setzen, wenn auf sie geklickt wird
-                            },
-                        shape = RoundedCornerShape(16.dp), // Abgerundete Ecken
-                        border = BorderStroke(2.dp, Color.White), // Weißer Rand
-                        color = Color.White // Hintergrundfarbe
+                            .fillMaxSize() // Füllt den gesamten Platz im Container
+                            .padding(5.dp), // Padding innerhalb des Containers
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center // Zentriert den Inhalt vertikal
                     ) {
-                        Column(
+                        val imageResId = plant.icon?.let { icon ->
+                            val context = LocalContext.current
+                            context.resources.getIdentifier(icon, "drawable", context.packageName)
+                        } ?: R.drawable.plant // Fallback-Bild
+
+                        Image(
+                            painter = painterResource(id = imageResId),
+                            contentDescription = plant.name,
                             modifier = Modifier
-                                .fillMaxSize() // Füllt den gesamten Platz im Container
-                                .padding(5.dp), // Padding innerhalb des Containers
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center // Zentriert den Inhalt vertikal
-                        ) {
-                            val imageResId = plant.icon?.let { icon ->
-                                val context = LocalContext.current
-                                context.resources.getIdentifier(icon, "drawable", context.packageName)
-                            } ?: R.drawable.plant // Fallback-Bild
+                                .size(60.dp) // Größe der Bilder einstellen
+                                .align(Alignment.CenterHorizontally) // Zentriert das Bild
+                        )
 
-                            Image(
-                                painter = painterResource(id = imageResId),
-                                contentDescription = plant.name,
-                                modifier = Modifier
-                                    .size(60.dp) // Größe der Bilder einstellen
-                                    .align(Alignment.CenterHorizontally) // Zentriert das Bild
-                            )
-
-                            // Dynamische Textanzeige
-                            Text(
-                                text = plant.name ?: "Kein Name",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                modifier = Modifier.padding(top = 8.dp)
-                                    .align(Alignment.CenterHorizontally) // Zentriert den Text
-                            )
-                        }
+                        // Dynamische Textanzeige
+                        Text(
+                            text = plant.name ?: "Kein Name",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                                .align(Alignment.CenterHorizontally) // Zentriert den Text
+                        )
                     }
                 }
             }
@@ -134,8 +150,7 @@ fun PlantTable(plant_collection: Plants) {
 }
 
 @Composable
-fun PlantDetail(plant: Plant) {
-    // Hier kannst du den Detailinhalt für die Pflanze anzeigen
+fun PlantDetailScreen(plantName: String?, navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -143,18 +158,16 @@ fun PlantDetail(plant: Plant) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Details für: ${plant.name}",
+            text = "$plantName",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = DarkGreen,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Hier kannst du weitere Informationen zur Pflanze anzeigen
-        // Zum Beispiel:
         Image(
             painter = painterResource(id = R.drawable.plant), // Beispielbild
-            contentDescription = plant.name,
+            contentDescription = plantName,
             modifier = Modifier.size(100.dp)
         )
 
@@ -164,5 +177,7 @@ fun PlantDetail(plant: Plant) {
             color = Color.Black,
             modifier = Modifier.padding(top = 8.dp)
         )
+
     }
 }
+

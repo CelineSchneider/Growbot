@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.appcompat)
     implementation(libs.google.accompanist.flowlayout)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.simple.xml)
     testImplementation(libs.junit)

@@ -43,7 +43,7 @@ class Measurement @JvmOverloads constructor(
 @Root(name = "entry", strict = false)
 class WateringEntry @JvmOverloads constructor(
     @field:Element(name = "entry", required = false)
-    var date: String? = null  // Datum optional gemacht
+    var timestamp: String
 )
 
 fun readXmlFromAssets(context: Context): Plants? {

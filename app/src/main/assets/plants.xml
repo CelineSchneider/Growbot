@@ -9,7 +9,10 @@
             </measurement>
         </measurements>
         <watering>
-            <entry>2024-10-01</entry>
+            <entry>2024-10-01T12:00:00Z</entry>
+            <entry>2024-10-02T12:00:00Z</entry>
+            <entry>2024-10-03T12:00:00Z</entry>
+            <entry>2024-10-07T12:00:00Z</entry>
         </watering>
         <icon>alocasia</icon>
     </plant>
