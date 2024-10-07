@@ -1,5 +1,6 @@
 package com.example.growbot
 
+import Texts
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,17 +20,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.growbot.ui.theme.GrowbotTheme
+import readXmlFromAssets
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContent {
             GrowbotTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    ScoreTable()
+                    // Lese die XML-Datei und erhalte die Pflanzen-Daten
+                    val plants = readXmlFromAssets(this) ?: Texts(emptyList(), 0)
+                    PlantTable(plants)
                 }
             }
         }
@@ -37,7 +40,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ScoreTable() {
+fun PlantTable(texts: Texts) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -45,7 +48,7 @@ fun ScoreTable() {
     ) {
         // Titel
         Text(
-            text = "Growbot", // Ersetze dies durch getString(R.string.app_name) in einer Activity
+            text = "Growbot - Pflanzenübersicht",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF005B5B) // Dunkelgrün
@@ -59,22 +62,14 @@ fun ScoreTable() {
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(modifier = Modifier.weight(1f), text = "Rank")
-            Text(modifier = Modifier.weight(1f), text = "Player")
-            Text(modifier = Modifier.weight(1f), text = "Team")
-            Text(modifier = Modifier.weight(1f), text = "Points")
+            Text(modifier = Modifier.weight(1f), text = "ID")
+            Text(modifier = Modifier.weight(2f), text = "Name")
+            Text(modifier = Modifier.weight(2f), text = "Letzte Bewässerung")
+            Text(modifier = Modifier.weight(1f), text = "Wasserstand")
         }
 
-        // Datenzeilen
-        val players = listOf(
-            Player("1", "Virat Kohli", "IND", "895"),
-            Player("2", "Rohit Sharma", "IND", "863"),
-            Player("3", "Faf du Plessis", "PAK", "834"),
-            Player("4", "Steven Smith", "AUS", "820"),
-            Player("5", "Ross Taylor", "NZ", "817")
-        )
-
-        for (player in players) {
+        // Pflanzen-Datenzeilen
+        for (plant in texts.plants ?: emptyList()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -82,23 +77,13 @@ fun ScoreTable() {
                     .padding(5.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(modifier = Modifier.weight(1f), text = player.rank)
-                Text(modifier = Modifier.weight(1f), text = player.name)
-                Text(modifier = Modifier.weight(1f), text = player.team)
-                Text(modifier = Modifier.weight(1f), text = player.points)
+                val lastWatering = plant.watering?.lastOrNull()?.date ?: "Keine Daten"
+                Text(modifier = Modifier.weight(1f), text = plant.id?.toString() ?: "Unbekannt")
+                Text(modifier = Modifier.weight(2f), text = plant.name ?: "Kein Name")
+                Text(modifier = Modifier.weight(2f), text = lastWatering)
+                Text(modifier = Modifier.weight(1f), text = texts.waterLevel?.toString() ?: "Unbekannt")
             }
         }
     }
 }
-
-data class Player(val rank: String, val name: String, val team: String, val points: String)
-
-
-
-
-
-
-
-
-
 

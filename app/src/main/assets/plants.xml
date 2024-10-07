@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <plants>
     <plant id="1">
         <name>Rose</name>
@@ -13,5 +12,6 @@
             <entry>2024-10-01</entry>
         </watering>
     </plant>
-    <!-- Weitere Pflanzen können hier hinzugefügt werden -->
+    <!-- Weitere Pflanzen -->
+    <waterLevel>75</waterLevel>
 </plants>
