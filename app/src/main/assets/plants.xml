@@ -16,14 +16,13 @@
         </watering>
         <icon>alocasia</icon>
     </plant>
-    <plant id="2">
-        <name>Geranium</name>
-    </plant>
     <plant id="3">
         <name>Monstera</name>
+        <icon>monstera</icon>
     </plant>
     <plant id="4">
         <name>Philodendron</name>
+        <icon>philodendron</icon>
     </plant>
     <plant id="5">
         <name>Zinnia</name>

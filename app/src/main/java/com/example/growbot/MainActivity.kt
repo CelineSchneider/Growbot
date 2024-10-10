@@ -6,17 +6,22 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -32,6 +38,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,8 +46,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.growbot.ui.theme.DarkGreen
 import com.example.growbot.ui.theme.GrowbotTheme
 import com.example.growbot.ui.theme.LightGreen
-import com.google.accompanist.flowlayout.FlowRow
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,19 +76,25 @@ fun NavigationGraph(navController: NavHostController) {
 fun PlantTableScreen(navController: NavHostController) {
     val plants = readXmlFromAssets(LocalContext.current) ?: Plants(emptyList(), 0)
 
+    // Bildschirmkonfiguration für Berechnung der Breiten und Schriftgrößen
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    val paddingHorizontal = 0.015f * screenWidth.value
+    val paddingVertical = 0.02f * screenWidth.value
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 5.dp, vertical = 10.dp)
+            .padding(horizontal = paddingHorizontal.dp, vertical = paddingVertical.dp)
     ) {
         Text(
             text = "Growbot",
-            fontSize = 50.sp,
+            fontSize = (0.15f * screenWidth.value).sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily(Font(R.font.atop)),
             color = DarkGreen,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally)
         )
 
         Image(
@@ -91,65 +102,95 @@ fun PlantTableScreen(navController: NavHostController) {
             contentDescription = "Logo",
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
+                .fillMaxWidth(0.8f)
+                .aspectRatio(1f)
         )
 
-        Text(
-            text = "Pflanzenübersicht",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = DarkGreen,
-        )
-
-        FlowRow(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(LightGreen)
-                .padding(5.dp),
-            mainAxisSpacing = 16.dp,
-            crossAxisSpacing = 16.dp
+                .weight(0.5f)
+                .padding(horizontal = (0.05f * screenWidth.value).dp),
+            shape = RoundedCornerShape(16.dp),
+            color = LightGreen
         ) {
-            for (plant in plants.plants ?: emptyList()) {
-                Surface(
+            Column(
+                modifier = Modifier
+                    .padding((0.04f * screenWidth.value).dp)
+                    .fillMaxSize()
+            ) {
+                Text(
+                    text = "Plants",
+                    fontSize = (0.05f * screenWidth.value).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGreen,
                     modifier = Modifier
-                        .size(100.dp)
-                        .clickable {
-                            navController.navigate("plant_detail/${plant.name}")
-                        },
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(2.dp, Color.White),
-                    color = Color.White
+                        .align(Alignment.Start)
+                        .padding(horizontal = paddingHorizontal.dp)
+                )
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    modifier = Modifier
+                        .weight(0.05f * screenWidth.value)
+                        .padding(
+                            horizontal = paddingHorizontal.dp,
+                            vertical = paddingVertical.dp
+                        ),
+                    horizontalArrangement = Arrangement.spacedBy(paddingHorizontal.dp),
+                    verticalArrangement = Arrangement.spacedBy(paddingHorizontal.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(5.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        val imageResId = plant.icon?.let { icon ->
-                            val context = LocalContext.current
-                            context.resources.getIdentifier(icon, "drawable", context.packageName)
-                        } ?: R.drawable.plant
-
-                        Image(
-                            painter = painterResource(id = imageResId),
-                            contentDescription = plant.name,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .align(Alignment.CenterHorizontally)
-                        )
-
-
-                        Text(
-                            text = plant.name ?: "Kein Name",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(top = 8.dp)
-                                .align(Alignment.CenterHorizontally)
-                        )
+                    items(plants.plants ?: emptyList()) { plant ->
+                        PlantItem(plant = plant, navController = navController)
                     }
                 }
             }
+        }
+        Spacer(modifier = Modifier.height(0.05f * screenHeight))
+    }
+}
+
+@Composable
+fun PlantItem(plant: Plant, navController: NavHostController) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(1f / 3f) // Jedes Element nimmt 1/3 der Breite des Bildschirms ein
+            .aspectRatio(1f)
+            .clickable {
+                navController.navigate("plant_detail/${plant.name}")
+            },
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(2.dp, Color.White),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding((0.02f * LocalConfiguration.current.screenWidthDp).dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            val imageResId = plant.icon?.let { icon ->
+                val context = LocalContext.current
+                context.resources.getIdentifier(icon, "drawable", context.packageName)
+            } ?: R.drawable.plant
+
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = plant.name,
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .aspectRatio(1f)
+            )
+
+            Text(
+                text = plant.name ?: "Kein Name",
+                fontWeight = FontWeight.Bold,
+                fontSize = (0.04f * LocalConfiguration.current.screenWidthDp).sp,
+                modifier = Modifier
+                    .padding(top = (0.02f * LocalConfiguration.current.screenWidthDp).dp)
+                    .align(Alignment.CenterHorizontally)
+            )
         }
     }
 }
@@ -205,24 +246,21 @@ fun TemperatureLineChart(
     temperatureData: List<Float>,
     modifier: Modifier = Modifier
 ) {
-    // Max- und Min-Werte für die Skalierung
     val maxY = temperatureData.maxOrNull() ?: 0f
     val minY = temperatureData.minOrNull() ?: 0f
 
-    // Farben und Pinsel
     val lineColor = Color.Blue
     val pointColor = Color.Red
     val axisColor = Color.Gray
 
-    // Anzahl der Labels auf der Y-Achse
     val yAxisLabelsCount = 5
     val yAxisStep = (maxY - minY) / yAxisLabelsCount
 
-    // Platz für die Y-Achse (Skala links)
     Row(modifier = modifier) {
-        // Y-Achsen-Beschriftungen
         Column(
-            modifier = Modifier.fillMaxHeight().padding(end = 8.dp),
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(end = 8.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             for (i in 0..yAxisLabelsCount) {
@@ -236,7 +274,6 @@ fun TemperatureLineChart(
             }
         }
 
-        // Das eigentliche Diagramm
         Box(modifier = Modifier.fillMaxSize()) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val chartHeight = size.height
@@ -244,68 +281,30 @@ fun TemperatureLineChart(
 
                 if (temperatureData.size < 2) return@Canvas
 
-                // Schrittweite auf der X-Achse berechnen
                 val stepX = chartWidth / (temperatureData.size - 1)
+                val stepY = chartHeight / (maxY - minY)
 
-                // Y-Werte skalieren basierend auf minY und maxY
-                fun scaleY(value: Float): Float {
-                    return chartHeight - ((value - minY) / (maxY - minY) * chartHeight)
-                }
-
-                // Linien zwischen den Punkten zeichnen
                 for (i in 0 until temperatureData.size - 1) {
-                    val startX = i * stepX
-                    val startY = scaleY(temperatureData[i])
-                    val endX = (i + 1) * stepX
-                    val endY = scaleY(temperatureData[i + 1])
+                    val x1 = i * stepX
+                    val y1 = chartHeight - (temperatureData[i] - minY) * stepY
+                    val x2 = (i + 1) * stepX
+                    val y2 = chartHeight - (temperatureData[i + 1] - minY) * stepY
 
-                    // Linie zwischen zwei Punkten
                     drawLine(
+                        start = androidx.compose.ui.geometry.Offset(x1, y1),
+                        end = androidx.compose.ui.geometry.Offset(x2, y2),
                         color = lineColor,
-                        start = androidx.compose.ui.geometry.Offset(startX, startY),
-                        end = androidx.compose.ui.geometry.Offset(endX, endY),
                         strokeWidth = 4f
                     )
                 }
 
-                // Punkte auf der Linie zeichnen
-                for (i in temperatureData.indices) {
-                    val x = i * stepX
-                    val y = scaleY(temperatureData[i])
-                    drawCircle(pointColor, radius = 8f, center = androidx.compose.ui.geometry.Offset(x, y))
-                }
-
-                // Y-Achse zeichnen
-                drawLine(
-                    color = axisColor,
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(0f, chartHeight),
-                    strokeWidth = 5f
-                )
-
-                // X-Achse zeichnen
-                drawLine(
-                    color = axisColor,
-                    start = androidx.compose.ui.geometry.Offset(0f, chartHeight),
-                    end = androidx.compose.ui.geometry.Offset(chartWidth, chartHeight),
-                    strokeWidth = 5f
-                )
-            }
-
-            // X-Achsen-Beschriftungen
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomStart)
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                for (i in temperatureData.indices) {
-                    Text(
-                        text = "T${i + 1}",  // Du kannst hier deine eigenen Beschriftungen verwenden
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                temperatureData.forEachIndexed { index, value ->
+                    val x = index * stepX
+                    val y = chartHeight - (value - minY) * stepY
+                    drawCircle(
+                        color = pointColor,
+                        radius = 8f,
+                        center = androidx.compose.ui.geometry.Offset(x, y)
                     )
                 }
             }
