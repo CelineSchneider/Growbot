@@ -13,7 +13,9 @@ class Plants @JvmOverloads constructor(
     @field:ElementList(inline = true, required = false)
     var plants: List<Plant>? = null,  // com.example.growbot.Plants könnte null sein, wenn das XML leer ist
     @field:Element(name = "waterLevel", required = false)
-    var waterLevel: Int? = null // optional gemacht
+    var waterLevel: Int? = null,
+    @field:ElementList(name = "notifications", required = false)
+    var notifications: List<PlantNotification>? = null
 )
 
 @Root(name = "plant", strict = false)
@@ -23,9 +25,9 @@ class Plant @JvmOverloads constructor(
     @field:Element(name = "name", required = false)
     var name: String? = null,  // Name optional gemacht
     @field:ElementList(name = "measurements", inline = true, required = false)
-    var measurements: List<Measurement>? = null,  // Measurements könnte null sein
+    var measurements: List<Measurement>? = null,
     @field:ElementList(name = "watering", inline = true, required = false)
-    var watering: List<WateringEntry>? = null,  // Watering könnte null sein
+    var watering: List<WateringEntry>? = null,
     @field:Element(name = "icon", required = false)
     var icon: String? = null
 )
@@ -45,6 +47,18 @@ class WateringEntry @JvmOverloads constructor(
     @field:Element(name = "entry", required = false)
     var timestamp: String
 )
+
+
+@Root(name = "plantNotification", strict = false)
+class PlantNotification @JvmOverloads constructor(
+    @field:Attribute(name = "code", required = false)
+    var code: String? = null,
+    @field:Attribute(name = "status", required = false)
+    var status: Boolean? = null
+)
+
+
+
 
 fun readXmlFromAssets(context: Context): Plants? {
     // AssetManager verwenden, um die Datei zu öffnen
@@ -68,4 +82,8 @@ fun readXmlFromAssets(context: Context): Plants? {
         null
     }
 }
+
+
+
+
 

@@ -25,7 +25,14 @@
         <icon>philodendron</icon>
     </plant>
     <plant id="5">
-        <name>Zinnia</name>
+        <name>Test1</name>
+    </plant>
+    <plant id="6">
+        <name>Test2</name>
     </plant>
     <waterLevel>75</waterLevel>
+    <notifications>
+        <plantNotification code="water_level_too_low" status="true" />
+        <plantNotification code="soil_too_wet" status="false" />
+    </notifications>
 </plants>
