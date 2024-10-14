@@ -25,7 +25,14 @@
         <icon>philodendron</icon>
     </plant>
     <plant id="5">
-        <name>Zinnia</name>
+        <name>Test1</name>
     </plant>
+    <plant id="6">
+        <name>Test2</name>
+    </plant>
+
     <waterLevel>75</waterLevel>
+<!--    <notifications>-->
+<!--        <-->
+<!--    </notifications>-->
 </plants>
