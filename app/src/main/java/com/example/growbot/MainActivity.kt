@@ -1,6 +1,12 @@
 package com.example.growbot
 
+import Plant
+import Plants
+import WateringEntry
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,11 +33,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -42,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -61,18 +65,37 @@ import androidx.navigation.compose.rememberNavController
 import com.example.growbot.ui.theme.DarkGreen
 import com.example.growbot.ui.theme.GrowbotTheme
 import com.example.growbot.ui.theme.LightGreen
+import com.google.gson.Gson
+import java.io.InputStreamReader
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+
+fun readJsonFromAssets(context: Context): Plants? {
+    val assetManager = context.assets
+    val inputStream = assetManager.open("plants.json")
+    val reader = InputStreamReader(inputStream)
+
+    return try {
+        val gson = Gson()
+        gson.fromJson(reader, Plants::class.java)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
 
 
 // Entry point of the application
 class MainActivity : ComponentActivity() {
     // Zustand für die Pflanzen-Daten
-    var plantsState by mutableStateOf<Plants?>(null)
+    private var plantsState by mutableStateOf<Plants?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Lade die Pflanzen beim Start
-        plantsState = readXmlFromAssets(applicationContext)
+        plantsState = readJsonFromAssets(applicationContext)
 
         setContent {
             GrowbotTheme {
@@ -85,7 +108,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 // Navigation setup
 @Composable
 fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
@@ -95,7 +117,7 @@ fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
             val plantName = backStackEntry.arguments?.getString("plantName")
             PlantDetailScreen(plantName, navController, plantsState)
         }
-        composable("add_plant") { AddPlantScreen(navController, plantsState) }
+        composable("add_plant") { AddPlantScreen(navController) }
     }
 }
 
@@ -120,7 +142,14 @@ fun PlantTableScreen(navController: NavHostController, plantsState: Plants?) {
     ) {
         TopBar(plantsState)
         Header()
-        PlantList(plants.plants ?: emptyList(), navController, plantsState)
+        PlantList(plants.plants, navController)
+
+        // Hier kannst du die geparsten Daten verwenden
+        Log.d("Parsed Plants", "Water Level: ${plants.waterLevel}")
+        plants.plants.forEach { plant ->
+            Log.d("Plant", "Name: ${plant.name}, Watering Entries: ${plant.watering?.joinToString()}")
+        }
+
     }
 }
 
@@ -188,8 +217,6 @@ fun NotificationBell(hasNotification: Boolean, onClick: () -> Unit) {
 
 
 
-
-
 @Composable
 fun Header() {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -221,7 +248,7 @@ fun Header() {
 }
 
 @Composable
-fun PlantList(plants: List<Plant>, navController: NavHostController, plantsState: Plants?) {
+fun PlantList(plants: List<Plant>, navController: NavHostController) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     Surface(
@@ -253,21 +280,138 @@ fun PlantList(plants: List<Plant>, navController: NavHostController, plantsState
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(plants) { plant ->
-                        PlantItem(plant, navController, plantsState)
+                        PlantItem(plant, navController)
                     }
 
                     // Add Plant Button
-                    item { AddPlantButton(navController, plantsState) }
+                    item { AddPlantButton(navController) }
                 }
             }
         }
     }
 }
 
+@Composable
+fun AddPlantButton(navController: NavHostController) {
+    var plantName by remember { mutableStateOf("") }
+    val selectedIcon = remember { mutableStateOf("Plant") }
+    var showDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Liste der Icons mit ihren Namen und Ressourcen
+    val icons = listOf(
+        "Plant" to R.drawable.plant,
+        "Monstera" to R.drawable.monstera,
+        "Alocasia" to R.drawable.alocasia,
+        "Philodendron" to R.drawable.philodendron
+    )
+
+    // Button zum Hinzufügen einer Pflanze
+    Button(onClick = { showDialog = true }) {
+        Text("Add Plant")
+    }
+
+    // Zeige den Dialog für die Pflanzenauswahl
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Add New Plant") },
+            text = {
+                Column {
+                    TextField(
+                        value = plantName,
+                        onValueChange = { plantName = it },
+                        label = { Text("Plant Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Button(onClick = { showDialog = false }) {
+                        Text("Select Icon: ${selectedIcon.value}")
+                    }
+
+                    IconSelectionDialog(
+                        selectedIcon = selectedIcon,
+                        icons = icons,
+                        onDismiss = { showDialog = false }
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (plantName.isNotEmpty()) {
+                        val plantDatabase = PlantDatabase(context)
+                        plantDatabase.addPlant(plantName, selectedIcon.value) // Pflanze hinzufügen
+                        navController.navigate("plant_table") // Navigiere zur Pflanzentabelle
+                        showDialog = false // Schließe den Dialog
+                    } else {
+                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                    }
+                }) {
+                    Text("Add Plant")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
 
 
 @Composable
-fun PlantItem(plant: Plant, navController: NavHostController, plantsState: Plants?) {
+fun IconSelectionDialog(
+    selectedIcon: MutableState<String>,
+    icons: List<Pair<String, Int>>, // List of Pair(name, resourceId)
+    onDismiss: () -> Unit
+) {
+    val showIconDialog = remember { mutableStateOf(true) }
+
+    if (showIconDialog.value) {
+        AlertDialog(
+            onDismissRequest = {
+                showIconDialog.value = false
+                onDismiss()
+            },
+            title = { Text("Select an Icon") },
+            text = {
+                Column {
+                    icons.forEach { (name, resId) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedIcon.value = name // Update the selected icon name
+                                    showIconDialog.value = false // Close the dialog
+                                    onDismiss() // Call dismiss callback
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(id = resId),
+                                contentDescription = name,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(name)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showIconDialog.value = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
+
+
+
+@Composable
+fun PlantItem(plant: Plant, navController: NavHostController) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     Surface(
         modifier = Modifier
@@ -298,7 +442,7 @@ fun PlantItem(plant: Plant, navController: NavHostController, plantsState: Plant
 
             // Text section
             Text(
-                text = plant.name ?: "Unnamed",
+                text = plant.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = (0.03f * screenWidth.value).sp,
                 textAlign = TextAlign.Center,
@@ -311,40 +455,19 @@ fun PlantItem(plant: Plant, navController: NavHostController, plantsState: Plant
 }
 
 
-// Add Plant Button
 @Composable
-fun AddPlantButton(navController: NavHostController, plantsState: Plants?) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth(1f / 3f)
-            .aspectRatio(1f)
-            .clickable { navController.navigate("add_plant") },
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(2.dp, Color.White),
-        color = Color.White
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.plus),
-                contentDescription = "Add Plant",
-                modifier = Modifier.size(0.1f * screenWidth),
-                contentScale = ContentScale.Fit
-            )
-        }
-    }
-}
-
-// AddPlantScreen for adding a new plant
-@Composable
-fun AddPlantScreen(navController: NavHostController, plantsState: Plants?) {
+fun AddPlantScreen(navController: NavHostController) {
     var plantName by remember { mutableStateOf("") }
     val selectedIcon = remember { mutableStateOf("plant") }
     val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+
+    val icons = listOf(
+        "Plant" to R.drawable.plant,
+        "Monstera" to R.drawable.monstera,
+        "Alocasia" to R.drawable.alocasia,
+        "Philodendron" to R.drawable.philodendron
+    )
 
     Column(
         modifier = Modifier
@@ -361,13 +484,26 @@ fun AddPlantScreen(navController: NavHostController, plantsState: Plants?) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        IconSelectionDropdown(selectedIcon, listOf("plant", "monstera", "alocasia", "philodendron"))
+        // Button zum Öffnen des Dialogs
+        Button(onClick = { showDialog = true }) {
+            Text("Select Icon: ${selectedIcon.value}")
+        }
+
+        // Zeige den Dialog für die Auswahl des Icons
+        if (showDialog) {
+            IconSelectionDialog(
+                selectedIcon = selectedIcon,
+                icons = icons,
+                onDismiss = { showDialog = false } // Schließe den Dialog
+            )
+        }
 
         Spacer(modifier = Modifier.weight(0.2f))
 
         Button(onClick = {
             if (plantName.isNotEmpty()) {
-//                addPlantToXml(context, Plant(name = plantName, icon = selectedIcon.value), plantsState)
+                val plantDatabase = PlantDatabase(context)
+                plantDatabase.addPlant(plantName, selectedIcon.value) // Pflanze hinzufügen
                 navController.navigate("plant_table")
             } else {
                 Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
@@ -378,94 +514,84 @@ fun AddPlantScreen(navController: NavHostController, plantsState: Plants?) {
     }
 }
 
-// Icon selection dropdown
-@Composable
-fun IconSelectionDropdown(selectedIcon: MutableState<String>, icons: List<String>) {
-    var expanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            "Select Icon: ${selectedIcon.value}",
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true }
-        )
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            icons.forEach { iconName ->
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(id = getIconResId(iconName)),
-                                contentDescription = iconName,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = iconName)
-                        }
-                    },
-                    onClick = {
-                        selectedIcon.value = iconName
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
 
+//TODO: data visualisation
 @Composable
 fun PlantDetailScreen(plantName: String?, navController: NavHostController, plantsState: Plants?) {
-    val context = LocalContext.current
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
     val plant = plantsState?.plants?.find { it.name == plantName }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        plant?.let {
+    if (plant == null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
-                text = it.name ?: "Unnamed",
-                fontSize = 24.sp,
+                text = "Plant not found",
+                fontSize = (screenWidth.value * 0.06f).sp,
                 fontWeight = FontWeight.Bold,
-                color = DarkGreen
+                color = Color.Red
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val imageResId = getIconResId(it.icon ?: "plant")
-            Image(
-                painter = painterResource(id = imageResId),
-                contentDescription = it.name,
-                modifier = Modifier.size(128.dp) // Größe des Pflanzenbildes anpassen
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Hier kannst du zusätzliche Details zur Pflanze hinzufügen, z.B. Beschreibung
-            Text(
-                text = "Details about ${it.name}",
-                fontSize = 16.sp,
-                color = Color.Gray
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
 
             Button(onClick = { navController.navigate("plant_table") }) {
                 Text("Back to Plant Table")
             }
-        } ?: run {
+        }
+    } else {
+        // Speichern der watering-Daten in einer lokalen Variable
+        val wateringData = plant.watering
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text(
-                text = "Plant not found",
-                fontSize = 16.sp,
-                color = Color.Red
+                text = plant.name,
+                fontSize = (screenWidth.value * 0.06f).sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkGreen
             )
+
+            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
+
+            val imageResId = getIconResId(plant.icon ?: "plant")
+            Image(
+                painter = painterResource(id = imageResId),
+                contentDescription = plant.name,
+                modifier = Modifier.size(screenWidth * 0.3f)
+            )
+
+            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
+
+            // Überprüfen, ob Wässerungsdaten vorhanden sind
+            if (wateringData != null) {
+                if (wateringData.isEmpty()) {
+                    Text(
+                        text = "No watering schedule available.",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                } else {
+                    // Wenn es Wässerungsdaten gibt, werden sie angezeigt
+                    WateringCycleList(wateringDates = wateringData)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
+
+            Button(onClick = { navController.navigate("plant_table") }) {
+                Text("Back to Plant Table")
+            }
         }
     }
 }
@@ -473,43 +599,90 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
 
 
 @Composable
+fun WateringCycleList(wateringDates: List<WateringEntry>) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+    ) {
+        Text(
+            text = "Watering Schedule",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        if (wateringDates.isNotEmpty()) {
+            wateringDates.forEach { wateringEntry ->
+                val timestamp = wateringEntry.timestamp // Hol den Timestamp von WateringEntry
+                val formattedDate = timestamp?.let { formatTimestamp(it) }
+                if (formattedDate != null) {
+                    Text(
+                        text = formattedDate,
+                        fontSize = 16.sp,
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                            .fillMaxWidth(),
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+        else {
+            Text(
+                text = "No watering dates available.",
+                fontSize = 16.sp,
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+fun formatTimestamp(timestamp: String): String {
+    // Beispiel: "2024-10-01T12:00:00Z"
+    val formatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.getDefault())
+    val instant = Instant.parse(timestamp)
+    val dateTime = instant.atZone(ZoneId.systemDefault())
+    return dateTime.format(formatter)
+}
+
+
+@SuppressLint("MutableCollectionMutableState")
+@Composable
 fun NotificationList(onDismiss: () -> Unit, plantsState: Plants?) {
     // MutableList für Benachrichtigungen verwenden
-    var notifications by remember { mutableStateOf(mutableListOf<String>()) }
+    val notifications by remember { mutableStateOf(mutableListOf<String>()) }
 
     // Benachrichtigungen hinzufügen, falls `plantsState` nicht null ist
-    if (plantsState != null && plantsState.notifications != null) {
+    if (plantsState?.notifications != null) {
         notifications.clear()  // Alte Benachrichtigungen löschen, bevor neue hinzugefügt werden
-        for (notification in plantsState.notifications!!) {
+        for (notification in plantsState.notifications) {
             // Nur Benachrichtigungen mit status == true hinzufügen
             if (notification.status == true) {
-                notifications.add("${notification.code}: ${notification.status}")
+                notifications.add(notification.error_message ?: "No message available")
             }
         }
     }
 
-    // Dialog anzeigen mit einer Liste von Benachrichtigungen
-    AlertDialog(
-        onDismissRequest = onDismiss,  // Die Funktion, die aufgerufen wird, wenn der Dialog geschlossen wird
-        title = { Text("Notifications") },
-        text = {
-            Column {
-                // Wenn keine Benachrichtigungen angezeigt werden, zeigen wir eine Standardnachricht an
-                if (notifications.isEmpty()) {
-                    Text("No new notifications.")
-                } else {
-                    notifications.forEach { notification ->
-                        Text(text = notification)
+    // Dialog anzeigen, wenn Benachrichtigungen vorhanden sind
+    if (notifications.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Notifications") },
+            text = {
+                Column {
+                    notifications.forEach { msg ->
+                        Text(text = msg, modifier = Modifier.padding(4.dp))
                     }
                 }
+            },
+            confirmButton = {
+                Button(onClick = onDismiss) {
+                    Text("Dismiss")
+                }
             }
-        },
-        confirmButton = {
-            Button(onClick = { onDismiss() }) {  // Schließt den Dialog, wenn der Button gedrückt wird
-                Text("Close")
-            }
-        }
-    )
+        )
+    }
 }
 
 
