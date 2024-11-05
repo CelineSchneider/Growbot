@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,7 +48,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -68,9 +73,12 @@ import com.example.growbot.ui.theme.LightGreen
 import com.google.gson.Gson
 import java.io.InputStreamReader
 import java.time.Instant
+import java.time.Month
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
 
 fun readJsonFromAssets(context: Context): Plants? {
     val assetManager = context.assets
@@ -239,7 +247,7 @@ fun Header() {
             painter = painterResource(id = R.drawable.growbot_transparent),
             contentDescription = "Logo",
             modifier = Modifier
-                .fillMaxWidth(0.8f)
+                .fillMaxHeight(0.5f)
                 .aspectRatio(1f)
         )
 
@@ -284,78 +292,40 @@ fun PlantList(plants: List<Plant>, navController: NavHostController) {
                     }
 
                     // Add Plant Button
-                    item { AddPlantButton(navController) }
+                    item { AddPlantItem(navController) }
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun AddPlantButton(navController: NavHostController) {
-    var plantName by remember { mutableStateOf("") }
-    val selectedIcon = remember { mutableStateOf("Plant") }
-    var showDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-
-    // Liste der Icons mit ihren Namen und Ressourcen
-    val icons = listOf(
-        "Plant" to R.drawable.plant,
-        "Monstera" to R.drawable.monstera,
-        "Alocasia" to R.drawable.alocasia,
-        "Philodendron" to R.drawable.philodendron
-    )
-
-    // Button zum Hinzufügen einer Pflanze
-    Button(onClick = { showDialog = true }) {
-        Text("Add Plant")
-    }
-
-    // Zeige den Dialog für die Pflanzenauswahl
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Add New Plant") },
-            text = {
-                Column {
-                    TextField(
-                        value = plantName,
-                        onValueChange = { plantName = it },
-                        label = { Text("Plant Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Button(onClick = { showDialog = false }) {
-                        Text("Select Icon: ${selectedIcon.value}")
-                    }
-
-                    IconSelectionDialog(
-                        selectedIcon = selectedIcon,
-                        icons = icons,
-                        onDismiss = { showDialog = false }
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (plantName.isNotEmpty()) {
-                        val plantDatabase = PlantDatabase(context)
-                        plantDatabase.addPlant(plantName, selectedIcon.value) // Pflanze hinzufügen
-                        navController.navigate("plant_table") // Navigiere zur Pflanzentabelle
-                        showDialog = false // Schließe den Dialog
-                    } else {
-                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                    }
-                }) {
-                    Text("Add Plant")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
+fun AddPlantItem(navController: NavHostController) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth(1f / 3f)
+            .aspectRatio(1f)
+            .clickable { navController.navigate("add_plant") },
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(2.dp, Color.White),
+        color = Color.White // Different color to indicate it's a button
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center // Center the text
+        ) {
+            Image(
+                painter = painterResource(id =R.drawable.plus),
+                contentDescription = stringResource(id = R.string.add_new_plant),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.1f)
+            )
+        }
     }
 }
 
@@ -473,19 +443,39 @@ fun AddPlantScreen(navController: NavHostController) {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center // Zentriert den Inhalt vertikal
     ) {
-        Text("Add New Plant", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = DarkGreen)
+        Text(
+            text = "Add New Plant",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            color = DarkGreen,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
+        // Abgerundetes Textfeld für den Pflanzennamen
         TextField(
             value = plantName,
             onValueChange = { plantName = it },
             label = { Text("Plant Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(16.dp)) // Abgerundete Ecken
+                .padding(8.dp),
+            shape = RoundedCornerShape(16.dp), // Runde Ecken für das Eingabefeld
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
         // Button zum Öffnen des Dialogs
-        Button(onClick = { showDialog = true }) {
+        Button(
+            onClick = { showDialog = true },
+            shape = RoundedCornerShape(16.dp), // Abgerundeter Button
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp) // Abstand links und rechts
+        ) {
             Text("Select Icon: ${selectedIcon.value}")
         }
 
@@ -494,22 +484,29 @@ fun AddPlantScreen(navController: NavHostController) {
             IconSelectionDialog(
                 selectedIcon = selectedIcon,
                 icons = icons,
-                onDismiss = { showDialog = false } // Schließe den Dialog
+                onDismiss = { showDialog = false }
             )
         }
 
-        Spacer(modifier = Modifier.weight(0.2f))
+        Spacer(modifier = Modifier.height(32.dp))
 
-        Button(onClick = {
-            if (plantName.isNotEmpty()) {
-                val plantDatabase = PlantDatabase(context)
-                plantDatabase.addPlant(plantName, selectedIcon.value) // Pflanze hinzufügen
-                navController.navigate("plant_table")
-            } else {
-                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-            }
-        }) {
-            Text("Add Plant")
+        // Abgerundeter Button zum Hinzufügen der Pflanze
+        Button(
+            onClick = {
+                if (plantName.isNotEmpty()) {
+                    val plantDatabase = PlantDatabase(context)
+                    plantDatabase.addPlant(plantName, selectedIcon.value)
+                    navController.navigate("plant_table")
+                } else {
+                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                }
+            },
+            shape = RoundedCornerShape(16.dp), // Abgerundeter Button
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp) // Abstand links und rechts
+        ) {
+            Text(stringResource(id = R.string.add_plant))
         }
     }
 }
@@ -573,19 +570,13 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
 
             Spacer(modifier = Modifier.height(screenHeight * 0.02f))
 
-            // Überprüfen, ob Wässerungsdaten vorhanden sind
+
             if (wateringData != null) {
-                if (wateringData.isEmpty()) {
-                    Text(
-                        text = "No watering schedule available.",
-                        fontSize = 16.sp,
-                        color = Color.Gray
-                    )
-                } else {
-                    // Wenn es Wässerungsdaten gibt, werden sie angezeigt
-                    WateringCycleList(wateringDates = wateringData)
-                }
+                WateringCalendar(wateringEntries = wateringData, currentMonth = YearMonth.now())
+            } else {
+                WateringCalendar(wateringEntries = emptyList(), currentMonth = YearMonth.now())
             }
+
 
             Spacer(modifier = Modifier.height(screenHeight * 0.02f))
 
@@ -596,54 +587,102 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
     }
 }
 
-
-
 @Composable
-fun WateringCycleList(wateringDates: List<WateringEntry>) {
-    Column(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-    ) {
-        Text(
-            text = "Watering Schedule",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMonth) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
-        if (wateringDates.isNotEmpty()) {
-            wateringDates.forEach { wateringEntry ->
-                val timestamp = wateringEntry.timestamp // Hol den Timestamp von WateringEntry
-                val formattedDate = timestamp?.let { formatTimestamp(it) }
-                if (formattedDate != null) {
-                    Text(
-                        text = formattedDate,
-                        fontSize = 16.sp,
-                        modifier = Modifier
-                            .padding(vertical = 4.dp)
-                            .fillMaxWidth(),
-                        color = Color.Black
-                    )
-                }
+    val daysInMonth = currentMonth.lengthOfMonth()
+    val wateringDays = mutableListOf<Int>()
+
+    for (wateringEntry in wateringEntries) {
+        val timestamp = wateringEntry.timestamp
+        timestamp?.let {
+            val (formattedDate, day, month) = formatTimestamp(it)
+            if (month == currentMonth.month) {
+                wateringDays.add(day)
             }
         }
-        else {
+    }
+
+    Text(
+        text = "Watering Days",
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+
+    Box(
+        modifier = Modifier
+            .size(screenWidth)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier
+            .fillMaxSize()
+            .align(Alignment.Center)) {
+            val radius = size.minDimension / 2
+            val angleStep = 360f / daysInMonth
+            val circleRadius = size.minDimension * 0.04f
+            val offsetDistance = size.minDimension * 0.9f
+
+            val textPaint = android.graphics.Paint().apply {
+                textAlign = android.graphics.Paint.Align.CENTER
+                textSize = circleRadius
+                isAntiAlias = true
+            }
+
+            for (day in 1..daysInMonth) {
+                val angle = Math.toRadians((angleStep * (day - 1) + 90).toDouble())
+                val x = radius + (radius - offsetDistance) * kotlin.math.cos(angle).toFloat()
+                val y = radius + (radius - offsetDistance) * kotlin.math.sin(angle).toFloat()
+
+                val circleColor = if (day in wateringDays) DarkGreen else LightGreen
+                drawCircle(
+                    color = circleColor,
+                    radius = circleRadius,
+                    center = Offset(x, y)
+                )
+
+                textPaint.color = if (circleColor == DarkGreen) LightGreen.toArgb() else DarkGreen.toArgb()
+
+                drawContext.canvas.nativeCanvas.drawText(
+                    day.toString(),
+                    x,
+                    y + (textPaint.textSize / 3),
+                    textPaint
+                )
+            }
+        }
+
+        // Monatsanzeige zentriert in der Mitte der Box
+        Box(
+            modifier = Modifier
+                .size(screenWidth * 0.3f) // Größe des Hintergrundkreises
+                .background(LightGreen, CircleShape) // Voller Kreis als Hintergrund
+                .align(Alignment.Center) // Box zentrieren
+        ) {
             Text(
-                text = "No watering dates available.",
-                fontSize = 16.sp,
-                color = Color.Gray
+                text = currentMonth.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
+                fontSize = (screenWidth.value * 0.1f).sp, // Schriftgröße passend zur Größe des Kreises
+                fontWeight = FontWeight.Bold,
+                color = DarkGreen,
+                modifier = Modifier.align(Alignment.Center) // Text zentriert im Box
             )
         }
     }
 }
 
-fun formatTimestamp(timestamp: String): String {
-    // Beispiel: "2024-10-01T12:00:00Z"
+
+
+
+fun formatTimestamp(timestamp: String): Triple<String, Int, Month> {
     val formatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.getDefault())
     val instant = Instant.parse(timestamp)
     val dateTime = instant.atZone(ZoneId.systemDefault())
-    return dateTime.format(formatter)
+    val formattedDate = dateTime.format(formatter)
+    val dayOfMonth = dateTime.dayOfMonth
+    val month = dateTime.month
+    return Triple(formattedDate, dayOfMonth, month)
 }
 
 
