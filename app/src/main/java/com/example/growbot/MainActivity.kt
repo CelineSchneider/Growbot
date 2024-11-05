@@ -6,7 +6,6 @@ import WateringEntry
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,6 +70,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.growbot.ui.theme.DarkGreen
 import com.example.growbot.ui.theme.GrowbotTheme
 import com.example.growbot.ui.theme.LightGreen
+import com.example.growbot.ui.theme.Pink
 import com.google.gson.Gson
 import java.io.InputStreamReader
 import java.time.Instant
@@ -151,13 +152,6 @@ fun PlantTableScreen(navController: NavHostController, plantsState: Plants?) {
         TopBar(plantsState)
         Header()
         PlantList(plants.plants, navController)
-
-        // Hier kannst du die geparsten Daten verwenden
-        Log.d("Parsed Plants", "Water Level: ${plants.waterLevel}")
-        plants.plants.forEach { plant ->
-            Log.d("Plant", "Name: ${plant.name}, Watering Entries: ${plant.watering?.joinToString()}")
-        }
-
     }
 }
 
@@ -213,8 +207,8 @@ fun NotificationBell(hasNotification: Boolean, onClick: () -> Unit) {
             if (hasNotification) {
                 Box(
                     modifier = Modifier
-                        .size(0.01f * screenHeight)
-                        .background(LightGreen, shape = CircleShape)
+                        .size(0.0105f * screenHeight)
+                        .background(Pink, shape = CircleShape)
                         .align(Alignment.TopEnd)
                 )
             }
@@ -711,7 +705,20 @@ fun NotificationList(onDismiss: () -> Unit, plantsState: Plants?) {
             text = {
                 Column {
                     notifications.forEach { msg ->
-                        Text(text = msg, modifier = Modifier.padding(4.dp))
+                        OutlinedCard(
+                            border = BorderStroke(1.dp, Pink),
+                            shape = RoundedCornerShape(12.dp), // Abgerundete Ecken
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = msg,
+                                modifier = Modifier
+                                    .padding(8.dp), // Innenabstand für den Text
+                                color = Color.Black // Textfarbe
+                            )
+                        }
                     }
                 }
             },
@@ -723,6 +730,7 @@ fun NotificationList(onDismiss: () -> Unit, plantsState: Plants?) {
         )
     }
 }
+
 
 
 

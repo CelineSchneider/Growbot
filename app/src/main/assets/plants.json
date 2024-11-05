@@ -73,7 +73,7 @@
   ],
   "waterLevel": 75,
   "notifications": [
-    {"code": "water_level_too_low", "status": true},
-    {"code": "soil_too_wet", "status": false}
+    {"code": "water_level_too_low", "status": true, "error_message": "Please refill your water!"},
+    {"code": "soil_too_wet", "status": false, "error_message":  "One of your plants is drowning :("}
   ]
 }
