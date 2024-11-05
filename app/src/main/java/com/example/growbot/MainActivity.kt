@@ -13,6 +13,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
@@ -150,7 +152,7 @@ fun PlantTableScreen(navController: NavHostController, plantsState: Plants?) {
             )
     ) {
         TopBar(plantsState)
-        Header()
+        Header(plantsState)
         PlantList(plants.plants, navController)
     }
 }
@@ -219,8 +221,9 @@ fun NotificationBell(hasNotification: Boolean, onClick: () -> Unit) {
 
 
 
+
 @Composable
-fun Header() {
+fun Header(plantsState: Plants?) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
 
     Column(
@@ -235,19 +238,67 @@ fun Header() {
             color = DarkGreen
         )
 
-        Spacer(modifier = Modifier.height((0.06f * screenWidth.value).dp))
-
+        // Bild
         Image(
             painter = painterResource(id = R.drawable.growbot_transparent),
             contentDescription = "Logo",
             modifier = Modifier
-                .fillMaxHeight(0.5f)
+                .fillMaxHeight(0.4f)
                 .aspectRatio(1f)
+        )
+
+        Spacer(modifier = Modifier.height((0.08f * screenWidth.value).dp))
+
+        // Wasserstandsanzeige
+        if (plantsState != null) {
+            WaterLevelIndicator(
+                waterLevel = (((plantsState.waterLevel?.toFloat()?.div(100)) ?: 0f)),
+                modifier = Modifier
+                    .fillMaxWidth() // Nimmt die gesamte Breite ein
+                    .fillMaxHeight(0.05f) // Feste Höhe für die Wasserstandsanzeige
+            )
+        }
+
+        // Beschriftung unter der Anzeige
+        Text(
+            text = "Water Level",
+            modifier = Modifier.padding(top = 4.dp), // Abstand zum oberen Element
+            color = Color.Black // Textfarbe
         )
 
         Spacer(modifier = Modifier.height((0.06f * screenWidth.value).dp))
     }
 }
+
+
+@Composable
+fun WaterLevelIndicator(waterLevel: Float, modifier: Modifier = Modifier) {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val indicatorWidth = screenWidth * 0.05f // Passt die Breite auf 5% der Bildschirmbreite an
+
+    Box(
+        modifier = modifier
+            .width(indicatorWidth)
+            .clip(RoundedCornerShape(16.dp))
+            .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
+    ) {
+        // Innerer Bereich für den Wasserstand
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(fraction = waterLevel)
+                .fillMaxHeight()
+                .align(Alignment.CenterStart)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Pink)
+                .border(2.dp, Color.Black, RoundedCornerShape(16.dp))
+        )
+    }
+}
+
+
+
+
+
 
 @Composable
 fun PlantList(plants: List<Plant>, navController: NavHostController) {
