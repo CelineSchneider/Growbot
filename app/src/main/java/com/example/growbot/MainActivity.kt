@@ -1,5 +1,6 @@
 package com.example.growbot
 
+import Measurement
 import Plant
 import Plants
 import WateringEntry
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,9 +35,13 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,6 +58,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
@@ -75,10 +83,9 @@ import com.example.growbot.ui.theme.LightGreen
 import com.example.growbot.ui.theme.Pink
 import com.google.gson.Gson
 import java.io.InputStreamReader
-import java.time.Instant
 import java.time.Month
 import java.time.YearMonth
-import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -126,7 +133,23 @@ fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
         composable("plant_table") { PlantTableScreen(navController, plantsState) }
         composable("plant_detail/{plantName}") { backStackEntry ->
             val plantName = backStackEntry.arguments?.getString("plantName")
-            PlantDetailScreen(plantName, navController, plantsState)
+            PlantDetailScreen(plantName, navController, plantsState, YearMonth.now())
+        }
+        // Navigationsroute
+        composable("nextMonth/{plantName}/{month}") { backStackEntry ->
+            val plantName = backStackEntry.arguments?.getString("plantName")
+            val month = backStackEntry.arguments?.getString("month")?.let { YearMonth.parse(it) }
+            if (month != null) {
+                PlantDetailScreen(plantName, navController, plantsState, month)
+            }
+        }
+
+        composable("previousMonth/{plantName}/{month}") { backStackEntry ->
+            val plantName = backStackEntry.arguments?.getString("plantName")
+            val month = backStackEntry.arguments?.getString("month")?.let { YearMonth.parse(it) }
+            if (month != null) {
+                PlantDetailScreen(plantName, navController, plantsState, month)
+            }
         }
         composable("add_plant") { AddPlantScreen(navController) }
     }
@@ -336,7 +359,6 @@ fun PlantList(plants: List<Plant>, navController: NavHostController) {
                         PlantItem(plant, navController)
                     }
 
-                    // Add Plant Button
                     item { AddPlantItem(navController) }
                 }
             }
@@ -558,10 +580,8 @@ fun AddPlantScreen(navController: NavHostController) {
 
 
 
-
-//TODO: data visualisation
 @Composable
-fun PlantDetailScreen(plantName: String?, navController: NavHostController, plantsState: Plants?) {
+fun PlantDetailScreen(plantName: String?, navController: NavHostController, plantsState: Plants?, month: YearMonth) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
@@ -588,8 +608,8 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
             }
         }
     } else {
-        // Speichern der watering-Daten in einer lokalen Variable
         val wateringData = plant.watering
+        val measurementData = plant.measurements
 
         Column(
             modifier = Modifier
@@ -597,40 +617,80 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+
+
             Text(
                 text = plant.name,
-                fontSize = (screenWidth.value * 0.06f).sp,
+                fontSize = (screenWidth.value * 0.09f).sp,
+                fontWeight = FontWeight.Bold,
+                color = DarkGreen,
+                fontFamily = FontFamily(Font(R.font.atop))
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Previous Month Button mit Pfeil nach links
+                IconButton(onClick = {
+                    val previousMonth = month.minusMonths(1)
+                    navController.navigate("previousMonth/$plantName/$previousMonth")
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Previous Month",
+                        modifier = Modifier.size(32.dp) // Pfeilgröße anpassen
+                    )
+                }
+
+                // Next Month Button mit Pfeil nach rechts
+                IconButton(onClick = {
+                    val nextMonth = month.plusMonths(1)
+                    navController.navigate("nextMonth/$plantName/$nextMonth")
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowForward,
+                        contentDescription = "Next Month",
+                        modifier = Modifier.size(32.dp) // Pfeilgröße anpassen
+                    )
+                }
+            }
+
+            if (wateringData != null) {
+                Text(
+                    text = "Watering Calendar",
+                    fontSize = (screenWidth.value * 0.05f).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGreen
+                )
+                WateringCalendar(wateringEntries = wateringData, currentMonth = month)
+            } else {
+                WateringCalendar(wateringEntries = emptyList(), currentMonth = month)
+            }
+
+
+
+
+            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
+
+            Text(
+                text = "Humidity Graph",
+                fontSize = (screenWidth.value * 0.05f).sp,
                 fontWeight = FontWeight.Bold,
                 color = DarkGreen
             )
 
-            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
-
-            val imageResId = getIconResId(plant.icon ?: "plant")
-            Image(
-                painter = painterResource(id = imageResId),
-                contentDescription = plant.name,
-                modifier = Modifier.size(screenWidth * 0.3f)
+            HumidityGraph(
+                measurements = measurementData,
+                currentMonth = month
             )
-
-            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
-
-
-            if (wateringData != null) {
-                WateringCalendar(wateringEntries = wateringData, currentMonth = YearMonth.now())
-            } else {
-                WateringCalendar(wateringEntries = emptyList(), currentMonth = YearMonth.now())
-            }
-
-
-            Spacer(modifier = Modifier.height(screenHeight * 0.02f))
-
-            Button(onClick = { navController.navigate("plant_table") }) {
-                Text("Back to Plant Table")
-            }
         }
     }
 }
+
 
 @Composable
 fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMonth) {
@@ -649,22 +709,14 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
         }
     }
 
-    Text(
-        text = "Watering Days",
-        fontSize = 20.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-
     Box(
         modifier = Modifier
             .size(screenWidth)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .align(Alignment.Center)) {
+        // Outer Circle with Days
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2
             val angleStep = 360f / daysInMonth
             val circleRadius = size.minDimension * 0.04f
@@ -699,20 +751,116 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
             }
         }
 
-        // Monatsanzeige zentriert in der Mitte der Box
-        Box(
-            modifier = Modifier
-                .size(screenWidth * 0.3f) // Größe des Hintergrundkreises
-                .background(LightGreen, CircleShape) // Voller Kreis als Hintergrund
-                .align(Alignment.Center) // Box zentrieren
-        ) {
-            Text(
-                text = currentMonth.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
-                fontSize = (screenWidth.value * 0.1f).sp, // Schriftgröße passend zur Größe des Kreises
-                fontWeight = FontWeight.Bold,
-                color = DarkGreen,
-                modifier = Modifier.align(Alignment.Center) // Text zentriert im Box
-            )
+        Row(modifier = Modifier
+            .offset(y = (-18).dp)) {
+
+            Box(
+                modifier = Modifier
+                    .size(screenWidth * 0.3f) // Size of the month circle
+                    .background(LightGreen, CircleShape) // Circle background
+            ) {
+                Text(
+                    text = currentMonth.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
+                    fontSize = (screenWidth.value * 0.1f).sp, // Font size proportional to circle size
+                    fontWeight = FontWeight.Bold,
+                    color = DarkGreen,
+                    modifier = Modifier.align(Alignment.Center) // Center the text within the circle
+                )
+            }
+
+        }
+
+    }
+}
+
+
+
+
+@Composable
+fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
+    // Erzeuge eine Liste mit allen Tagen des aktuellen Monats
+    val totalDaysInMonth = currentMonth.lengthOfMonth()
+    val allDaysInMonth = (1..totalDaysInMonth).toList()
+
+    // Erzeuge eine Map, die alle Messwerte eines Tages gruppiert
+    val measurementsGroupedByDay = measurements
+        .filter { measurement ->
+            val timestamp = measurement.timestamp
+            timestamp?.let {
+                val month = formatTimestamp(it).third
+                month == currentMonth.month
+            } ?: false
+        }
+        .groupBy { measurement ->
+            measurement.timestamp?.let { formatTimestamp(it).second }
+        }
+
+    // Finde den höchsten Luftfeuchtigkeitswert für jeden Tag
+    val maxMeasurementsForMonth = allDaysInMonth.map { day ->
+        val dailyMeasurements = measurementsGroupedByDay[day]
+
+        if (dailyMeasurements != null && dailyMeasurements.isNotEmpty()) {
+            // Finde den maximalen Luftfeuchtigkeitswert für den Tag
+            val maxHumidity = dailyMeasurements
+                .mapNotNull { it.humidity }
+                .maxOrNull()
+                ?.toFloat()
+
+            Measurement(timestamp = null, humidity = maxHumidity)
+        } else {
+            Measurement(timestamp = null, humidity = null)
+        }
+    }
+
+    if (maxMeasurementsForMonth.isNotEmpty()) {
+        val graphHeight = (screenHeight * 0.4f) // Noch größere Höhe für bessere Sichtbarkeit des Graphen
+
+        Canvas(modifier = Modifier.fillMaxWidth().height(graphHeight)) {
+            val padding = 40.dp.toPx() // Größeres Padding für bessere Sichtbarkeit
+            val width = size.width - padding * 2
+            val height = size.height - padding * 2
+
+            // Y-Achse Striche (keine Beschriftung)
+            val yAxisSteps = listOf(0, 25, 50, 75, 100)
+
+
+            yAxisSteps.forEach { step ->
+                val yPosition = height - (step / 100f * height) + padding
+                drawLine(
+                    color = LightGreen,
+                    start = Offset(padding, yPosition),
+                    end = Offset(size.width - padding, yPosition),
+                    strokeWidth = 5f
+                )
+            }
+
+            val firstHumidity = maxMeasurementsForMonth[0].humidity
+            if (firstHumidity != null) {
+                val normalizedFirstHumidity = firstHumidity / 100
+                val startY = height - (normalizedFirstHumidity * height) + padding
+
+                // Erzeuge den Pfad für den Graphen
+                val path = Path().apply {
+                    moveTo(padding, startY)  // Setze den Startpunkt für die Linie
+                    maxMeasurementsForMonth.forEachIndexed { index, measurement ->
+                        val x = padding + (index * (width / (maxMeasurementsForMonth.size - 1)))
+                        val humidity = measurement.humidity
+                        if (humidity != null) {
+                            val normalizedHumidity = humidity / 100
+                            val y = height - (normalizedHumidity * height) + padding
+                            lineTo(x, y)
+                        }
+                    }
+                }
+
+                drawPath(
+                    path = path,
+                    color = DarkGreen,
+                    style = Stroke(width = 8f) // Dickere Linie für den Graphen
+                )
+            }
         }
     }
 }
@@ -720,16 +868,22 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
 
 
 
+
+
 fun formatTimestamp(timestamp: String): Triple<String, Int, Month> {
+    // Parsen des ISO-8601 Zeitstempels (mit 'Z' für UTC-Zeit)
+    val dateTime = ZonedDateTime.parse(timestamp)
+
+    // Verwende das gewünschte Format für die Darstellung
     val formatter = DateTimeFormatter.ofPattern("dd MMM, HH:mm", Locale.getDefault())
-    val instant = Instant.parse(timestamp)
-    val dateTime = instant.atZone(ZoneId.systemDefault())
-    val formattedDate = dateTime.format(formatter)
+
+    // Extrahiere den Tag und den Monat
     val dayOfMonth = dateTime.dayOfMonth
     val month = dateTime.month
-    return Triple(formattedDate, dayOfMonth, month)
-}
 
+    // Gib das Formatierte Datum, den Tag und den Monat zurück
+    return Triple(dateTime.format(formatter), dayOfMonth, month)
+}
 
 @SuppressLint("MutableCollectionMutableState")
 @Composable

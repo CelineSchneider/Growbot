@@ -33,10 +33,10 @@ data class Measurement(
     var timestamp: String? = null,
 
     @SerializedName("temperature")
-    var temperature: Double? = null,
+    var temperature: Float? = null,
 
     @SerializedName("humidity")
-    var humidity: Double? = null
+    var humidity: Float? = null
 )
 
 data class WateringEntry(
