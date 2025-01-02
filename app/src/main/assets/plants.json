@@ -7,39 +7,152 @@
         {
           "timestamp": "2024-11-01T12:00:00Z",
           "temperature": 22.5,
-          "humidity": 55.0
+          "humidity": 10.0
         },
         {
           "timestamp": "2024-11-02T12:00:00Z",
           "temperature": 20.5,
-          "humidity": 59.0
+          "humidity": 8.0
         },
         {
           "timestamp": "2024-11-03T12:00:00Z",
-          "temperature": 20.5,
-          "humidity": 59.0
+          "temperature": 18.5,
+          "humidity": 5.0
         },
         {
           "timestamp": "2024-11-04T12:00:00Z",
-          "temperature": 20.5,
-          "humidity": 59.0
+          "temperature": 17.5,
+          "humidity": 7.0
         },
         {
           "timestamp": "2024-11-06T12:00:00Z",
-          "temperature": 20.5,
-          "humidity": 59.0
+          "temperature": 15.5,
+          "humidity": 10.0
         },
         {
           "timestamp": "2024-11-07T12:00:00Z",
-          "temperature": 20.5,
-          "humidity": 59.0
+          "temperature": 10.5,
+          "humidity": 9.0
+        },
+        {
+          "timestamp": "2024-11-08T12:00:00Z",
+          "temperature": 25.0,
+          "humidity": 80.0
+        },
+        {
+          "timestamp": "2024-11-09T12:00:00Z",
+          "temperature": 24.0,
+          "humidity": 70.0
+        },
+        {
+          "timestamp": "2024-11-10T12:00:00Z",
+          "temperature": 23.5,
+          "humidity": 75.0
+        },
+        {
+          "timestamp": "2024-11-11T12:00:00Z",
+          "temperature": 22.0,
+          "humidity": 65.0
+        },
+        {
+          "timestamp": "2024-11-12T12:00:00Z",
+          "temperature": 20.0,
+          "humidity": 60.0
+        },
+        {
+          "timestamp": "2024-11-13T12:00:00Z",
+          "temperature": 18.5,
+          "humidity": 8.0
+        },
+        {
+          "timestamp": "2024-11-14T12:00:00Z",
+          "temperature": 19.5,
+          "humidity": 7.5
+        },
+        {
+          "timestamp": "2024-11-15T12:00:00Z",
+          "temperature": 17.0,
+          "humidity": 9.0
+        },
+        {
+          "timestamp": "2024-11-16T12:00:00Z",
+          "temperature": 15.5,
+          "humidity": 10.0
+        },
+        {
+          "timestamp": "2024-11-17T12:00:00Z",
+          "temperature": 14.5,
+          "humidity": 6.0
+        },
+        {
+          "timestamp": "2024-11-18T12:00:00Z",
+          "temperature": 13.0,
+          "humidity": 5.0
+        },
+        {
+          "timestamp": "2024-11-19T12:00:00Z",
+          "temperature": 20.0,
+          "humidity": 75.0
+        },
+        {
+          "timestamp": "2024-11-20T12:00:00Z",
+          "temperature": 22.5,
+          "humidity": 80.0
+        },
+        {
+          "timestamp": "2024-11-21T12:00:00Z",
+          "temperature": 21.0,
+          "humidity": 85.0
+        },
+        {
+          "timestamp": "2024-11-22T12:00:00Z",
+          "temperature": 19.5,
+          "humidity": 70.0
+        },
+        {
+          "timestamp": "2024-11-23T12:00:00Z",
+          "temperature": 18.0,
+          "humidity": 10.0
+        },
+        {
+          "timestamp": "2024-11-24T12:00:00Z",
+          "temperature": 17.0,
+          "humidity": 5.0
+        },
+        {
+          "timestamp": "2024-11-25T12:00:00Z",
+          "temperature": 16.5,
+          "humidity": 8.0
+        },
+        {
+          "timestamp": "2024-11-26T12:00:00Z",
+          "temperature": 15.0,
+          "humidity": 9.0
+        },
+        {
+          "timestamp": "2024-11-27T12:00:00Z",
+          "temperature": 14.0,
+          "humidity": 10.0
+        },
+        {
+          "timestamp": "2024-11-28T12:00:00Z",
+          "temperature": 13.5,
+          "humidity": 6.0
+        },
+        {
+          "timestamp": "2024-11-29T12:00:00Z",
+          "temperature": 12.5,
+          "humidity": 8.0
+        },
+        {
+          "timestamp": "2024-11-30T12:00:00Z",
+          "temperature": 11.5,
+          "humidity": 10.0
         }
       ],
       "watering": [
-        {"entry": "2024-11-01T12:00:00Z"},
-        {"entry": "2024-11-02T12:00:00Z"},
-        {"entry": "2024-11-03T12:00:00Z"},
-        {"entry": "2024-11-07T12:00:00Z"}
+        {"entry": "2024-11-19T12:00:00Z"},
+        {"entry": "2024-11-08T12:00:00Z"}
       ],
       "icon": "alocasia"
     },
@@ -50,7 +163,7 @@
         {
           "timestamp": "2024-10-02T12:00:00Z",
           "temperature": 23.0,
-          "humidity": 60.0
+          "humidity": 5.0
         }
       ],
       "watering": [
@@ -59,8 +172,7 @@
       ],
       "icon": "monstera"
     },
-    {
-      "id": 3,
+      {"id": 3,
       "name": "Ficus",
       "measurements": [
         {
@@ -110,6 +222,6 @@
   "waterLevel": 75,
   "notifications": [
     {"code": "water_level_too_low", "status": true, "error_message": "Please refill your water!"},
-    {"code": "soil_too_wet", "status": false, "error_message":  "One of your plants is drowning :("}
+    {"code": "soil_too_wet", "status": false, "error_message": "One of your plants is drowning :("}
   ]
 }

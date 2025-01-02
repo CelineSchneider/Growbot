@@ -36,8 +36,8 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -135,7 +135,6 @@ fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
             val plantName = backStackEntry.arguments?.getString("plantName")
             PlantDetailScreen(plantName, navController, plantsState, YearMonth.now())
         }
-        // Navigationsroute
         composable("nextMonth/{plantName}/{month}") { backStackEntry ->
             val plantName = backStackEntry.arguments?.getString("plantName")
             val month = backStackEntry.arguments?.getString("month")?.let { YearMonth.parse(it) }
@@ -143,7 +142,6 @@ fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
                 PlantDetailScreen(plantName, navController, plantsState, month)
             }
         }
-
         composable("previousMonth/{plantName}/{month}") { backStackEntry ->
             val plantName = backStackEntry.arguments?.getString("plantName")
             val month = backStackEntry.arguments?.getString("month")?.let { YearMonth.parse(it) }
@@ -154,6 +152,7 @@ fun NavigationGraph(navController: NavHostController, plantsState: Plants?) {
         composable("add_plant") { AddPlantScreen(navController) }
     }
 }
+
 
 
 
@@ -369,7 +368,6 @@ fun PlantList(plants: List<Plant>, navController: NavHostController) {
 
 @Composable
 fun AddPlantItem(navController: NavHostController) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     Surface(
         modifier = Modifier
             .fillMaxWidth(1f / 3f)
@@ -640,7 +638,7 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
                     navController.navigate("previousMonth/$plantName/$previousMonth")
                 }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Previous Month",
                         modifier = Modifier.size(32.dp) // Pfeilgröße anpassen
                     )
@@ -652,7 +650,7 @@ fun PlantDetailScreen(plantName: String?, navController: NavHostController, plan
                     navController.navigate("nextMonth/$plantName/$nextMonth")
                 }) {
                     Icon(
-                        imageVector = Icons.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = "Next Month",
                         modifier = Modifier.size(32.dp) // Pfeilgröße anpassen
                     )
@@ -702,20 +700,18 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
     for (wateringEntry in wateringEntries) {
         val timestamp = wateringEntry.timestamp
         timestamp?.let {
-            val (formattedDate, day, month) = formatTimestamp(it)
+            val (_, day, month) = formatTimestamp(it)
             if (month == currentMonth.month) {
                 wateringDays.add(day)
             }
         }
     }
-
     Box(
         modifier = Modifier
             .size(screenWidth)
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Outer Circle with Days
         Canvas(modifier = Modifier.fillMaxSize()) {
             val radius = size.minDimension / 2
             val angleStep = 360f / daysInMonth
@@ -756,20 +752,18 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
 
             Box(
                 modifier = Modifier
-                    .size(screenWidth * 0.3f) // Size of the month circle
-                    .background(LightGreen, CircleShape) // Circle background
+                    .size(screenWidth * 0.3f)
+                    .background(LightGreen, CircleShape)
             ) {
                 Text(
                     text = currentMonth.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()),
-                    fontSize = (screenWidth.value * 0.1f).sp, // Font size proportional to circle size
+                    fontSize = (screenWidth.value * 0.1f).sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkGreen,
-                    modifier = Modifier.align(Alignment.Center) // Center the text within the circle
+                    modifier = Modifier.align(Alignment.Center)
                 )
             }
-
         }
-
     }
 }
 
@@ -780,11 +774,9 @@ fun WateringCalendar(wateringEntries: List<WateringEntry>, currentMonth: YearMon
 fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
-    // Erzeuge eine Liste mit allen Tagen des aktuellen Monats
     val totalDaysInMonth = currentMonth.lengthOfMonth()
     val allDaysInMonth = (1..totalDaysInMonth).toList()
 
-    // Erzeuge eine Map, die alle Messwerte eines Tages gruppiert
     val measurementsGroupedByDay = measurements
         .filter { measurement ->
             val timestamp = measurement.timestamp
@@ -797,16 +789,13 @@ fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
             measurement.timestamp?.let { formatTimestamp(it).second }
         }
 
-    // Finde den höchsten Luftfeuchtigkeitswert für jeden Tag
     val maxMeasurementsForMonth = allDaysInMonth.map { day ->
         val dailyMeasurements = measurementsGroupedByDay[day]
 
-        if (dailyMeasurements != null && dailyMeasurements.isNotEmpty()) {
-            // Finde den maximalen Luftfeuchtigkeitswert für den Tag
+        if (!dailyMeasurements.isNullOrEmpty()) {
             val maxHumidity = dailyMeasurements
                 .mapNotNull { it.humidity }
                 .maxOrNull()
-                ?.toFloat()
 
             Measurement(timestamp = null, humidity = maxHumidity)
         } else {
@@ -815,19 +804,18 @@ fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
     }
 
     if (maxMeasurementsForMonth.isNotEmpty()) {
-        val graphHeight = (screenHeight * 0.4f) // Noch größere Höhe für bessere Sichtbarkeit des Graphen
+        val graphHeight = (screenHeight * 0.4f)
 
         Canvas(modifier = Modifier.fillMaxWidth().height(graphHeight)) {
-            val padding = 40.dp.toPx() // Größeres Padding für bessere Sichtbarkeit
+            val padding = 40.dp.toPx()
             val width = size.width - padding * 2
             val height = size.height - padding * 2
 
-            // Y-Achse Striche (keine Beschriftung)
             val yAxisSteps = listOf(0, 25, 50, 75, 100)
 
 
             yAxisSteps.forEach { step ->
-                val yPosition = height - (step / 100f * height) + padding
+                val yPosition = (step / 100f * height) + padding
                 drawLine(
                     color = LightGreen,
                     start = Offset(padding, yPosition),
@@ -841,9 +829,8 @@ fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
                 val normalizedFirstHumidity = firstHumidity / 100
                 val startY = height - (normalizedFirstHumidity * height) + padding
 
-                // Erzeuge den Pfad für den Graphen
                 val path = Path().apply {
-                    moveTo(padding, startY)  // Setze den Startpunkt für die Linie
+                    moveTo(padding, startY)
                     maxMeasurementsForMonth.forEachIndexed { index, measurement ->
                         val x = padding + (index * (width / (maxMeasurementsForMonth.size - 1)))
                         val humidity = measurement.humidity
@@ -858,16 +845,12 @@ fun HumidityGraph(measurements: List<Measurement>, currentMonth: YearMonth) {
                 drawPath(
                     path = path,
                     color = DarkGreen,
-                    style = Stroke(width = 8f) // Dickere Linie für den Graphen
+                    style = Stroke(width = 8f)
                 )
             }
         }
     }
 }
-
-
-
-
 
 
 fun formatTimestamp(timestamp: String): Triple<String, Int, Month> {
@@ -949,3 +932,7 @@ fun getIconResId(iconName: String): Int {
         else -> R.drawable.plant
     }
 }
+
+
+
+
